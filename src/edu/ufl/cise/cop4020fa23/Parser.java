@@ -542,8 +542,6 @@ public class Parser implements IParser {
 	}
 
 
-	/* *****************************  Daniel  ***************************** */
-
 	// method to parse the LValue rule ::=> LValue ::= IDENT (PixelSelectorIn | ε ) (ChannelSelector | ε )
 	private LValue lvalue() throws LexicalException, PLCCompilerException {
 		IToken ident = match(Kind.IDENT);
