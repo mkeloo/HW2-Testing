@@ -763,6 +763,34 @@ class ParserTest_starter {
 	}
 
 
+	@Test
+	void test22() throws PLCCompilerException {
+		String input = "a[2,3]";
+		AST ast = getAST(input);
+		assertThat("", ast, instanceOf(PostfixExpr.class));
+		PostfixExpr postfixExpr = (PostfixExpr) ast;
+		IdentExpr identExpr = (IdentExpr) postfixExpr.primary();
+		assertEquals("a", identExpr.getName());
+		PixelSelector ps = postfixExpr.pixel();
+		checkNumLitExpr(ps.xExpr(), 2);
+		checkNumLitExpr(ps.yExpr(), 3);
+	}
+
+
+	@Test
+	void test16() throws PLCCompilerException {
+		String input = "3 + 4 * (2 - 5)";
+		AST ast = getAST(input);
+		BinaryExpr be = checkBinaryExpr(ast, Kind.PLUS);
+		Expr leftExpr = be.getLeftExpr();
+		checkNumLitExpr(leftExpr, 3);
+		Expr rightExpr = be.getRightExpr();
+		BinaryExpr be2 = checkBinaryExpr(rightExpr, Kind.TIMES);
+		Expr leftExpr2 = be2.getLeftExpr();
+		checkNumLitExpr(leftExpr2, 4);
+	}
+
+
 	//	/* *****************************  DANIEL  ***************************** */
 
 	@Test
@@ -816,38 +844,6 @@ class ParserTest_starter {
 		checkIdentExpr(ast, "variableName");
 	}
 
-
-	//	/* *****************************  MOKSH  ***************************** */
-
-	@Test
-	void test22() throws PLCCompilerException {
-		String input = "a[2,3]";
-		AST ast = getAST(input);
-		assertThat("", ast, instanceOf(PostfixExpr.class));
-		PostfixExpr postfixExpr = (PostfixExpr) ast;
-		IdentExpr identExpr = (IdentExpr) postfixExpr.primary();
-		assertEquals("a", identExpr.getName());
-		PixelSelector ps = postfixExpr.pixel();
-		checkNumLitExpr(ps.xExpr(), 2);
-		checkNumLitExpr(ps.yExpr(), 3);
-	}
-
-
-	@Test
-	void test16() throws PLCCompilerException {
-		String input = "3 + 4 * (2 - 5)";
-		AST ast = getAST(input);
-		BinaryExpr be = checkBinaryExpr(ast, Kind.PLUS);
-		Expr leftExpr = be.getLeftExpr();
-		checkNumLitExpr(leftExpr, 3);
-		Expr rightExpr = be.getRightExpr();
-		BinaryExpr be2 = checkBinaryExpr(rightExpr, Kind.TIMES);
-		Expr leftExpr2 = be2.getLeftExpr();
-		checkNumLitExpr(leftExpr2, 4);
-	}
-
-
-	//	/* *****************************  DANIEL  ***************************** */
 
 	@Test
 	void test24() throws PLCCompilerException {
