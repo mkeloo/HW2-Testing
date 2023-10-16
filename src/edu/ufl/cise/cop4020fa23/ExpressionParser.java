@@ -83,7 +83,7 @@ public class ExpressionParser implements IParser {
 
 
 	@Override
-	public AST parse() throws PLCCompilerException {
+	public AST parse() throws  PLCCompilerException {
 		Expr e = expr();
 		return e;
 	}
@@ -118,7 +118,7 @@ public class ExpressionParser implements IParser {
 	}
 
 	// Expr ::=  ConditionalExpr | LogicalOrExpr
-	private Expr expr() throws PLCCompilerException {
+	private Expr expr() throws  PLCCompilerException {
 		if (token.kind() == Kind.QUESTION) {
 			return conditionalExpr();
 		} else {
@@ -129,15 +129,31 @@ public class ExpressionParser implements IParser {
 
 
 	// ConditionalExpr ::=  ?  Expr  : -> Expr  : , Expr
+//	private ConditionalExpr conditionalExpr() throws PLCCompilerException {
+//		match(Kind.QUESTION);
+//		Expr condition = expr();
+//		match(Kind.RARROW);
+//		Expr trueExpr = expr();
+//		match(Kind.COMMA);
+//		Expr falseExpr = expr();
+//		return new ConditionalExpr(token, condition, trueExpr, falseExpr);
+//	}
+
 	private ConditionalExpr conditionalExpr() throws PLCCompilerException {
 		match(Kind.QUESTION);
 		Expr condition = expr();
 		match(Kind.RARROW);
-		Expr trueExpr = expr();
+		Expr trueExpr;
+		if (Kind.QUESTION == token.kind()) {
+			trueExpr = conditionalExpr();
+		} else {
+			trueExpr = expr();
+		}
 		match(Kind.COMMA);
 		Expr falseExpr = expr();
 		return new ConditionalExpr(token, condition, trueExpr, falseExpr);
 	}
+
 
 
 	// LogicalAndExpr ::=  ComparisonExpr ( (   &   |  &&   )  ComparisonExpr)*

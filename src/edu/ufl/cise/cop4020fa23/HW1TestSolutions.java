@@ -41,8 +41,12 @@ class HW1TestSolutions {
      * @return AST representing the program
      * @throws PLCCompilerException
      */
+//    AST getAST(String input) throws PLCCompilerException {
+//        return ComponentFactory.makeExpressionParser(input).parse();
+//    }
+
     AST getAST(String input) throws PLCCompilerException {
-        return ComponentFactory.makeExpressionParser(input).parse();
+        return ComponentFactory.makeParser(input).parse();
     }
 
     /**
@@ -786,7 +790,6 @@ class HW1TestSolutions {
             Expr v8 = ((ConditionalExpr) ast).getFalseExpr();
             checkNumLitExpr(v8, 5);
         });
-
     }
 
     @Test
