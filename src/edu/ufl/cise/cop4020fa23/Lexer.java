@@ -23,7 +23,7 @@ public class Lexer implements ILexer {
 
 
     private enum State {
-        START, IN_STRING, IN_IDENT, HAVE_ZERO, IN_FLOAT, IN_NUM,
+        START, IN_STRING, IN_IDENT, HAVE_ZERO, IN_NUM,
         HAVE_EQ, HAVE_MINUS, HAVE_LT, HAVE_GT, HAVE_COLON,
         HAVE_AMP,
         HAVE_TIMES,
@@ -31,7 +31,6 @@ public class Lexer implements ILexer {
         HAVE_BLOCK_CLOSE,
         HAVE_RARROW,
         HAVE_LSQUARE,
-//        HAVE_DOT
     }
 
     private State state = State.START;
@@ -101,7 +100,6 @@ public class Lexer implements ILexer {
                 case IN_IDENT -> resultToken = handleIdentifier(ch);
                 case IN_STRING -> resultToken = handleString(ch);
                 case HAVE_ZERO -> resultToken = handleZero(ch);
-//                case HAVE_DOT -> resultToken = handleDot(ch);
                 case IN_NUM -> resultToken = handleNumber(ch);
                 case HAVE_EQ -> resultToken = handleEqual(ch);
                 case HAVE_MINUS -> resultToken = handleMinus(ch);
@@ -366,7 +364,6 @@ public class Lexer implements ILexer {
 
 
 
-
     // EXTRA 1
 //    private IToken handleString(char ch) throws LexicalException {
 //        if (ch == '"') {
@@ -417,21 +414,6 @@ public class Lexer implements ILexer {
     }
 
 
-//    private IToken handleDot(char ch) {
-//        if (Character.isDigit(chars[pos + 1])) {
-//            pos++;
-//            while (Character.isDigit(chars[pos])) {
-//                pos++;
-//            }
-//            state = State.START;
-//            return createToken(Kind.FLOAT_LIT, startPos, pos - startPos, chars);
-//        } else {
-//            pos++;
-//            state = State.START;
-//            return createToken(Kind.DOT, startPos, 1, chars);
-//        }
-//    }
-//
 
 
     private IToken handleEqual(char ch) {
