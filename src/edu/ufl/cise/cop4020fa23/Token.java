@@ -88,3 +88,12 @@ public class Token implements IToken {
 	}
 
 }
+
+
+/*
+*
+* jar --create --file HW2.jar ./edu/ufl/cise/cop4020fa23/*.java ./edu/ufl/cise/cop4020fa23/exceptions/*.java ./edu/ufl/cise/cop4020fa23/ast/*.java
+*
+*
+*
+* */
