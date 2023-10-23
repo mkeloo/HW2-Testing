@@ -98,13 +98,13 @@ public class TypeCheckVisitor implements ASTVisitor {
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
 
-//        for (Declaration declaration : program.getDeclarations()) {
-//            declaration.accept(this, arg);
-//        }
-//
-//        for (Statement statement : program.getStatements()) {
-//            statement.accept(this, arg);
-//        }
+        for (Declaration declaration : program.getDeclarations()) {
+            declaration.accept(this, arg);
+        }
+
+        for (Statement statement : program.getStatements()) {
+            statement.accept(this, arg);
+        }
 
         return null;
 
