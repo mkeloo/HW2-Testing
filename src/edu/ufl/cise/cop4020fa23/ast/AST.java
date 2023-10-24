@@ -53,15 +53,5 @@ public abstract class AST {
 		return Objects.equals(firstToken, other.firstToken);
 	}
 
-	public Iterable<? extends Declaration> getDeclarations() {
-		return null;
-	}
 
-	public Iterable<? extends Statement> getStatements() {
-		return null;
-	}
-
-	public void accept(TypeCheckVisitor typeCheckVisitor, Object arg) {
-		// TODO Auto-generated method stub
-	}
 }
