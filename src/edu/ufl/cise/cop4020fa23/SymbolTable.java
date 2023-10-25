@@ -38,13 +38,16 @@ class SymbolTable {
             return null;
         }
 
-        for (Symbol symbol : table.get(name)) {
-            if (scopeStack.contains(symbol.serialNumber)) {
-                return symbol;
+        // Check from the most recent scope to the outermost scope
+        for (int i = scopeStack.size() - 1; i >= 0; i--) {
+            for (Symbol symbol : table.get(name)) {
+                if (symbol.serialNumber == scopeStack.get(i)) {
+                    return symbol;
+                }
             }
         }
 
-        return null; // Name is not bound in the current scope
+        return null; // Name is not bound in the current or enclosing scopes
     }
 
     @Override

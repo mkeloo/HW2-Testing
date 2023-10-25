@@ -20,6 +20,9 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
+        // Push the program's return type onto the returnTypeStack
+        returnTypeStack.push(program.getType());
+
         // Set the program's type based on the typeToken using the kind method
         program.setType(Type.kind2type(program.getTypeToken().kind()));
 
@@ -37,10 +40,29 @@ public class TypeCheckVisitor implements ASTVisitor {
         // Leave the program's scope using closeScope method
         symbolTable.closeScope();
 
-        // Return the program's type
+        // Pop the program's return type from the returnTypeStack
+        returnTypeStack.pop();
+
         return program.getType();
     }
 
+
+
+//    @Override
+//    public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
+//        // Enter a new scope for the block
+//        symbolTable.enterScope();
+//
+//        // Visit each element in the block
+//        for (Block.BlockElem elem : block.getElems()) {
+//            elem.visit(this, arg);
+//        }
+//
+//        // Leave the block's scope
+//        symbolTable.closeScope();
+//
+//        return null; // Since a block doesn't have a return type
+//    }
 
     @Override
     public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
@@ -59,37 +81,34 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-    @Override
-    public Object visitBinaryExpr(BinaryExpr expr, Object arg) throws PLCCompilerException {
-        // Visit the left and right operands to get their types
-        Type leftType = (Type) expr.getLeftExpr().visit(this, arg);
-        Type rightType = (Type) expr.getRightExpr().visit(this, arg);
 
-        // Infer the resulting type based on the operator and operand types
-        Type resultType = null;  // Initialize resultType to null for now
-        switch (expr.getOpKind()) {
+    @Override
+    public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
+        Expr left = binaryExpr.getLeftExpr();
+        Expr right = binaryExpr.getRightExpr();
+
+        Type leftType = (Type) left.visit(this, arg);
+        Type rightType = (Type) right.visit(this, arg);
+
+        // Check if the types of the left and right expressions are compatible for the operation
+        switch (binaryExpr.getOpKind()) {
             case PLUS:
             case MINUS:
             case TIMES:
-                // Additional logic to determine resultType based on operand types
-                // ...
+            case DIV:
+                if (leftType == Type.INT && rightType == Type.INT) {
+                    binaryExpr.setType(Type.INT);
+                    return Type.INT;
+                }
                 break;
-            // Handle other operators similarly
-            // ...
+            // Add other binary operations and their type-checking logic here...
             default:
-                throw new PLCCompilerException("Unrecognized binary operator");
+                throw new PLCCompilerException("Unsupported binary operation: " + binaryExpr.getOpKind());
         }
 
-        // Check if resultType has been determined
-        if (resultType == null) {
-            throw new PLCCompilerException("Unable to determine result type for binary expression");
-        }
-
-        // Set the type of the binary expression
-        expr.setType(resultType);
-
-        return resultType;
+        throw new PLCCompilerException("Unable to determine result type for binary expression");
     }
+
 
 
 //    @Override
@@ -110,58 +129,290 @@ public class TypeCheckVisitor implements ASTVisitor {
 //    }
 
 
-
     @Override
-    public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg) throws PLCCompilerException {
-        Expr e = unaryExpr.getExpr();
-        if (unaryExpr.getOp() == Kind.BANG && e.getType() != Type.BOOLEAN) {
-            throw new PLCCompilerException("Invalid type for unary negation. Expected BOOLEAN but found " + e.getType());
+    public Object visitUnaryExpr(UnaryExpr expr, Object arg) throws PLCCompilerException {
+        // Visit the operand to get its type
+        Type operandType = (Type) expr.getExpr().visit(this, arg);
+
+        // Infer the resulting type based on the unary operator and operand type
+        Type resultType;
+        switch (expr.getOp()) {
+            case MINUS:
+                // For negation
+                if (operandType == Type.INT) {
+                    resultType = Type.INT;
+                } else {
+                    throw new PLCCompilerException("Invalid operand type for unary negation");
+                }
+                break;
+            case BANG:
+                // For logical NOT
+                if (operandType == Type.BOOLEAN) {
+                    resultType = Type.BOOLEAN;
+                } else {
+                    throw new PLCCompilerException("Invalid operand type for unary NOT");
+                }
+                break;
+            // Handle other unary operators like width, height, etc.
+            // ...
+            default:
+                throw new PLCCompilerException("Unrecognized unary operator");
         }
-        // Set type for unaryExpr
-        unaryExpr.setType(e.getType());
-        return unaryExpr.getType();
+
+        // Set the type of the unary expression
+        expr.setType(resultType);
+
+        return resultType;
     }
 
+    @Override
+    public Object visitPostfixExpr(PostfixExpr postfixExpr, Object arg) throws PLCCompilerException {
+        Type type = (Type) postfixExpr.primary().visit(this, arg);
+        if (postfixExpr.pixel() != null) {
+            postfixExpr.pixel().visit(this, arg);
+        }
+        if (postfixExpr.channel() != null) {
+            postfixExpr.channel().visit(this, arg);
+        }
+        // Check if primary type is IMAGE, PixelSelector is not null, and ChannelSelector is not null
+        if (type == Type.IMAGE && postfixExpr.pixel() != null && postfixExpr.channel() != null) {
+            type = Type.INT;
+        }
+        postfixExpr.setType(type);
+        return type;
+    }
+
+
+
+    @Override
+    public Object visitConditionalExpr(ConditionalExpr expr, Object arg) throws PLCCompilerException {
+        // Ensure the guard expression evaluates to a boolean type
+        Type guardType = (Type) expr.getGuardExpr().visit(this, arg);
+        if (guardType != Type.BOOLEAN) {
+            throw new PLCCompilerException("Guard expression in a conditional must evaluate to a BOOLEAN type");
+        }
+
+        // Visit the true and false expressions to get their types
+        Type trueType = (Type) expr.getTrueExpr().visit(this, arg);
+        Type falseType = (Type) expr.getFalseExpr().visit(this, arg);
+
+        // Ensure the types of trueExpr and falseExpr are the same or compatible
+        if (trueType != falseType) {
+            throw new PLCCompilerException("The types of the true and false expressions in a conditional must be the same");
+        }
+
+        // Set the type of the conditional expression
+        expr.setType(trueType);
+
+        return trueType;
+    }
+
+    @Override
+    public Object visitStringLitExpr(StringLitExpr expr, Object arg) throws PLCCompilerException {
+        // Set the type of the StringLitExpr to STRING since string literals are of string type
+        expr.setType(Type.STRING);
+        return Type.STRING;
+    }
+
+    @Override
+    public Object visitNumLitExpr(NumLitExpr expr, Object arg) throws PLCCompilerException {
+        System.out.println("Debug: Inside visitNumLitExpr");  // Debug statement
+
+        expr.setType(Type.INT);
+
+        System.out.println("Debug: NumLitExpr type set to: " + expr.getType());  // Debug statement
+
+        return Type.INT;
+    }
+
+
+
+
+    @Override
+    public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
+        Symbol symbol = symbolTable.lookup(identExpr.getName());
+        if (symbol == null) {
+            throw new PLCCompilerException("Variable " + identExpr.getName() + " not declared in current scope.");
+        }
+
+        // Set the type of the IdentExpr based on the type of the Symbol.
+        // Convert the string representation of type from Symbol to the Type enum.
+        Type varType = Type.valueOf(symbol.getType().toUpperCase());
+        identExpr.setType(varType);
+
+        return varType;
+    }
+
+
+//    @Override
+//    public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
+//        Symbol symbol = symbolTable.lookup(identExpr.getName());
+//        if (symbol == null) {
+//            throw new PLCCompilerException("Variable " + identExpr.getName() + " not declared.");
+//        }
+//        return Type.valueOf(symbol.getType());
+//    }
+
+
+
+    @Override
+    public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException {
+        // Set the type of the BooleanLitExpr to BOOLEAN
+        booleanLitExpr.setType(Type.BOOLEAN);
+        return Type.BOOLEAN;
+    }
+
+    @Override
+    public Object visitConstExpr(ConstExpr constExpr, Object arg) throws PLCCompilerException {
+        // Determine the type based on the specific constant value
+        if ("Z".equals(constExpr.getName())) {
+            constExpr.setType(Type.INT);
+        } else {
+            constExpr.setType(Type.PIXEL);
+        }
+        return constExpr.getType();
+    }
+
+
+    @Override
+    public Object visitExpandedPixelExpr(ExpandedPixelExpr expr, Object arg) throws PLCCompilerException {
+        Type redType = (Type) expr.getRed().visit(this, arg);
+        Type greenType = (Type) expr.getGreen().visit(this, arg);
+        Type blueType = (Type) expr.getBlue().visit(this, arg);
+
+        if (redType != Type.INT || greenType != Type.INT || blueType != Type.INT) {
+            throw new PLCCompilerException("All components of an ExpandedPixelExpr must be of type INT");
+        }
+
+        // Return the type of the expression
+        return Type.INT; // or whatever the appropriate type is for this expression
+    }
+
+
+    @Override
+    public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException {
+        Type xType = (Type) pixelSelector.xExpr().visit(this, arg);
+        Type yType = (Type) pixelSelector.yExpr().visit(this, arg);
+
+        if (xType != Type.INT || yType != Type.INT) {
+            throw new PLCCompilerException("PixelSelector coordinates should be of type INT.");
+        }
+
+        return Type.IMAGE;  // Pixel selector returns a pixel, which is part of an image.
+    }
+
+
+    @Override
+    public Object visitChannelSelector(ChannelSelector channelSelector, Object arg) throws PLCCompilerException {
+        Kind colorKind = channelSelector.color();
+
+        if (colorKind != Kind.RES_red && colorKind != Kind.RES_green && colorKind != Kind.RES_blue) {
+            throw new PLCCompilerException("Invalid color channel: " + colorKind);
+        }
+
+        return Type.INT;  // Channel selector returns an integer value for the specific color channel.
+    }
+
+
+
+
+//    @Override
+//    public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
+//        // Visit Expr before NameDef
+//        Type exprType = null;
+//        if (declaration.getInitializer() != null) {
+//            exprType = (Type) declaration.getInitializer().visit(this, arg);
+//        }
+//
+//        // Now visit NameDef
+//        NameDef nameDef = declaration.getNameDef();
+//        nameDef.visit(this, arg);
+//        Type nameDefType = nameDef.getType();
+//
+//        // Check constraints
+//        if (exprType == null
+//                || exprType == nameDefType
+//                || (exprType == Type.STRING && nameDefType == Type.IMAGE)) {
+//            return nameDefType;
+//        } else {
+//            throw new PLCCompilerException("Type mismatch in declaration");
+//        }
+//    }
 
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
-        // Visit the NameDef part of the declaration to set its type
-        declaration.getNameDef().visit(this, arg);
-
-        // If there's an initializer (initial value) associated with the declaration, visit it
+        // If the declaration has an initializer, visit it first
         if (declaration.getInitializer() != null) {
             Type exprType = (Type) declaration.getInitializer().visit(this, arg);
+            declaration.getNameDef().getType(); // Access the type of the NameDef
+            // Set the type of the NameDef directly
+//            declaration.getNameDef().getType() = exprType;
+        }
 
-            // Check if the expression type matches the declaration type or if there's any allowed type conversion
-            if (exprType != declaration.getNameDef().getType() &&
-                    !(exprType == Type.STRING && declaration.getNameDef().getType() == Type.IMAGE)) {
-                throw new PLCCompilerException("Type mismatch in declaration");
+        // Visit the NameDef part of the declaration to set its type
+        NameDef nameDef = declaration.getNameDef();
+        nameDef.visit(this, arg);
+
+        // Check for re-declarations in the current scope
+        if (symbolTable.lookup(nameDef.getName()) != null) {
+            throw new PLCCompilerException("Variable " + nameDef.getName() + " already declared in the current scope.");
+        }
+
+        // Add the variable to the symbol table
+        symbolTable.insert(nameDef.getName(), nameDef.getType().toString());
+
+        // If the declaration has an initializer, check its type
+        if (declaration.getInitializer() != null) {
+            Type exprType = (Type) declaration.getInitializer().visit(this, arg);
+            if (exprType != nameDef.getType()) {
+                throw new PLCCompilerException("Type mismatch in declaration of " + nameDef.getName());
             }
         }
 
-        return declaration.getNameDef().getType();
+        return declaration.getNameDef().getType(); // Return the type of the declaration
     }
+
+
+
+//    @Override
+//    public Object visitExpr(Expr expr, Object arg) throws PLCCompilerException {
+//        if (expr instanceof ConditionalExpr) {
+//            // handle ConditionalExpr type checking...
+//        } else if (expr instanceof BinaryExpr) {
+//            // handle BinaryExpr type checking...
+//        } // ... similar for other types of expressions
+//        else if (expr instanceof ExpandedPixelExpr) {
+//            // handle ExpandedPixelExpr type checking...
+//        } else {
+//            throw new PLCCompilerException("Unknown expression type");
+//        }
+//    }
+
+
+
 
 
 
     @Override
     public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
         LValue lValue = assignmentStatement.getlValue();
-        String varName = lValue.toString();  // You might have to adjust this based on how you retrieve the variable name from LValue
+        String varName = lValue.getName();  // Corrected from lValue.toString()
 
         Symbol symbol = symbolTable.lookup(varName);
         if (symbol == null) {
             throw new PLCCompilerException("Variable " + varName + " not declared.");
         }
 
-        // Check the type of the expression being assigned and compare with the variable's type
-        Type exprType = assignmentStatement.getE().getType();
-        if (!exprType.equals(Type.valueOf(symbol.getType()))) {  // Assuming the type in symbol table is stored as string
+        // Visit the expression on the right-hand side
+        Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
+
+        // Check the type
+        if (!exprType.equals(Type.valueOf(symbol.getType()))) {
             throw new PLCCompilerException("Type mismatch in assignment.");
         }
-        return null;
-    }
 
+        return exprType;  // Return the type of the expression
+    }
 
 
 
@@ -174,68 +425,27 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-    @Override
-    public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException {
-        // Check the type of xExpr and yExpr
-        Type xType = pixelSelector.xExpr().getType();
-        Type yType = pixelSelector.yExpr().getType();
-
-        // Ensure both are of type INT
-        if (xType != Type.INT || yType != Type.INT) {
-            throw new PLCCompilerException("PixelSelector coordinates should be of type INT.");
-        }
-
-        return null;  // Adjust as per your logic
-    }
-
-    @Override
-    public Object visitChannelSelector(ChannelSelector channelSelector, Object arg) throws PLCCompilerException {
-        Kind colorKind = channelSelector.color();
-
-        // Check if the color is one of the expected values
-        if (colorKind != Kind.RES_red && colorKind != Kind.RES_green && colorKind != Kind.RES_blue) {
-            throw new PLCCompilerException("Invalid color channel: " + colorKind);
-        }
-
-        return null;  // Adjust as per your logic
-    }
 
 
-
-    @Override
-    public Object visitConditionalExpr(ConditionalExpr conditionalExpr, Object arg) throws PLCCompilerException {
-        Type guardType = conditionalExpr.getGuardExpr().getType();
-        Type trueExprType = conditionalExpr.getTrueExpr().getType();
-        Type falseExprType = conditionalExpr.getFalseExpr().getType();
-
-        // Check guard type
-        if (guardType != Type.BOOLEAN) {
-            throw new PLCCompilerException("Guard expression in conditional must be of type BOOLEAN");
-        }
-
-        // Check that the true and false expressions have the same type
-        if (trueExprType != falseExprType) {
-            throw new PLCCompilerException("True and false expressions in conditional must have the same type");
-        }
-
-        // Assuming the type of the whole conditional expression is the type of its true/false branches
-        conditionalExpr.setType(trueExprType);
-
-        return null;  // Adjust as per your logic
-    }
 
     @Override
     public Object visitDimension(Dimension dimension, Object arg) throws PLCCompilerException {
-        Type widthType = dimension.getWidth().getType();
-        Type heightType = dimension.getHeight().getType();
+        System.out.println("Debug: Visiting Dimension");  // Debug statement
+
+        Type widthType = (Type) dimension.getWidth().visit(this, arg);
+        Type heightType = (Type) dimension.getHeight().visit(this, arg);
 
         // Check width and height types
         if (widthType != Type.INT || heightType != Type.INT) {
             throw new PLCCompilerException("Width and height in dimension must be of type INT");
         }
 
-        return null;  // Adjust as per your logic
+        return Type.INT;  // Return the type as INT
     }
+
+
+
+
 
     @Override
     public Object visitDoStatement(DoStatement doStatement, Object arg) throws PLCCompilerException {
@@ -250,38 +460,7 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-    @Override
-    public Object visitExpandedPixelExpr(ExpandedPixelExpr expandedPixelExpr, Object arg) throws PLCCompilerException {
-        Type redType = expandedPixelExpr.getRed().getType();
-        Type greenType = expandedPixelExpr.getGreen().getType();
-        Type blueType = expandedPixelExpr.getBlue().getType();
 
-        if (redType != Type.INT || greenType != Type.INT || blueType != Type.INT) {
-            throw new PLCCompilerException("Red, Green, and Blue expressions in ExpandedPixelExpr must be of type INT");
-        }
-
-        // Assuming the type of the whole ExpandedPixelExpr is PIXEL (if there is such a type)
-        expandedPixelExpr.setType(Type.PIXEL);
-
-        return null;  // Adjust as per your logic
-    }
-
-
-    @Override
-    public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-        // Using the getName() method from IdentExpr to get the name of the variable.
-        String varName = identExpr.getName();
-
-        Symbol symbol = symbolTable.lookup(varName);
-
-        if (symbol == null) {
-            throw new PLCCompilerException("Variable " + varName + " not declared in current scope.");
-        }
-
-        // Continue type checking using the type from the symbol
-        String varType = symbol.getType();  // Replace with actual method name from Symbol class
-        return null;  // Adjust as per your logic
-    }
 
     @Override
     public Object visitGuardedBlock(GuardedBlock guardedBlock, Object arg) throws PLCCompilerException {
@@ -326,18 +505,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         return null;  // Adjust as per your logic
     }
 
-    @Override
-    public Object visitNumLitExpr(NumLitExpr numLitExpr, Object arg) throws PLCCompilerException {
-        // If there are specific constraints on the numeric value, check them here.
-        // Otherwise, there might not be much to check since it's inherently a numeric type.
-        return null;  // Adjust as per your logic
-    }
-
-
-    @Override
-    public Object visitPostfixExpr(PostfixExpr postfixExpr, Object arg) throws PLCCompilerException {
-        return null;
-    }
 
 
     @Override
@@ -345,112 +512,55 @@ public class TypeCheckVisitor implements ASTVisitor {
         Expr returnedExpr = returnStatement.getE();
         Type returnedType = returnedExpr.getType();
 
+        if (returnTypeStack.isEmpty()) {
+            throw new PLCCompilerException("Unexpected return statement outside of function or method scope.");
+        }
+
         // Peek at the top of the stack for expected return type
         Type expectedReturnType = returnTypeStack.peek();
 
         if (returnedType != expectedReturnType) {
             throw new PLCCompilerException("Mismatched return type. Expected " + expectedReturnType + " but found " + returnedType);
         }
-        return null;
+        returnedExpr.visit(this, arg);
+        return returnedType;
     }
 
 
+
+
 //    @Override
-//    public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
-//        Type programType = program.getType();
-//        if (programType == null) {
-//            throw new PLCCompilerException("Program lacks a return type.");
+//    public Object visitWriteStatement(WriteStatement writeStatement, Object arg) throws PLCCompilerException {
+//        Expr exprToPrint = writeStatement.getExpr();
+//
+//        // Check if the expression has been type-checked
+//        if (exprToPrint.getType() == null) {
+//            throw new PLCCompilerException("Type of the expression in WriteStatement has not been determined.");
 //        }
 //
-//        // Check each parameter in the program
-//        for (NameDef param : program.getParams()) {
-//            Type paramType = param.getType();
-//            // Further checks on each parameter's type can be done here.
+//        // Disallow printing of VOID and PIXEL types as an example
+//        if (exprToPrint.getType() == Type.VOID || exprToPrint.getType() == Type.PIXEL) {
+//            throw new PLCCompilerException("Cannot print expressions of type " + exprToPrint.getType());
 //        }
 //
-//        // Type check the block
-//        // This is a placeholder; you'd need to further check the block's statements for their types.
-//        return null;  // Adjust as per your logic
+//        // If there are other constraints or checks you'd like to add, place them here.
+//
+//        return null;  // If everything is fine, return null or adjust as per your logic.
 //    }
-//
-//    @Override
-//    public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws PLCCompilerException {
-//        Expr returnedExpr = returnStatement.getE();
-//        Type returnedType = returnedExpr.getType(); // Assuming every expression has a getType() method
-//
-//        // This is a hypothetical method to fetch the expected return type
-//        // You will have to replace it with actual logic to determine the enclosing function's return type
-//        Type expectedReturnType = getCurrentFunctionReturnType();
-//
-//        if (returnedType != expectedReturnType) {
-//            throw new PLCCompilerException("Mismatched return type. Expected " + expectedReturnType + " but found " + returnedType);
-//        }
-//        return null;
-//    }
-
-    @Override
-    public Object visitStringLitExpr(StringLitExpr stringLitExpr, Object arg) throws PLCCompilerException {
-        String value = stringLitExpr.getText();
-            // If there are specific constraints on the string value, check them here.
-            // For instance, let's assume there's a maximum length of 500 characters for strings:
-        if (value.length() > 500) {
-            throw new PLCCompilerException("String literal exceeds maximum length of 500 characters.");
-        }
-
-        // Set type for stringLitExpr
-        stringLitExpr.setType(Type.STRING); // Assuming you have a Type.STRING for string literals
-        return Type.STRING;
-    }
-
 
 
     @Override
     public Object visitWriteStatement(WriteStatement writeStatement, Object arg) throws PLCCompilerException {
-        Expr exprToPrint = writeStatement.getExpr();
-
-        // Check if the expression has been type-checked
-        if (exprToPrint.getType() == null) {
+        Expr expr = writeStatement.getExpr();
+        Type exprType = (Type) expr.visit(this, arg); // Ensure that the expression's type is determined
+        if (exprType == null) {
             throw new PLCCompilerException("Type of the expression in WriteStatement has not been determined.");
         }
-
-        // Disallow printing of VOID and PIXEL types as an example
-        if (exprToPrint.getType() == Type.VOID || exprToPrint.getType() == Type.PIXEL) {
-            throw new PLCCompilerException("Cannot print expressions of type " + exprToPrint.getType());
-        }
-
-        // If there are other constraints or checks you'd like to add, place them here.
-
-        return null;  // If everything is fine, return null or adjust as per your logic.
+        return exprType; // Return the determined type
     }
 
 
 
-    @Override
-    public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException {
-        String value = booleanLitExpr.getText();
-        if (!value.equals("true") && !value.equals("false")) {
-            throw new PLCCompilerException("Invalid boolean literal value: " + value);
-        }
-        // Set type for booleanLitExpr
-        booleanLitExpr.setType(Type.BOOLEAN);
-        return Type.BOOLEAN;
-    }
-
-    @Override
-    public Object visitConstExpr(ConstExpr constExpr, Object arg) throws PLCCompilerException {
-        String value = constExpr.getName();
-        Type type;
-        if (value.matches("^\\d+$")) { // If the value is a number
-            type = Type.INT;
-        } else if (value.startsWith("\"") && value.endsWith("\"")) { // If the value is a string
-            type = Type.STRING;
-        } else {
-            throw new PLCCompilerException("Unknown constant type for value: " + value);
-        }
-        // Set type for constExpr
-        constExpr.setType(type);
-        return type;
-    }
 
 
 }
