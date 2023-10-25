@@ -48,22 +48,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
 
 
-//    @Override
-//    public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
-//        // Enter a new scope for the block
-//        symbolTable.enterScope();
-//
-//        // Visit each element in the block
-//        for (Block.BlockElem elem : block.getElems()) {
-//            elem.visit(this, arg);
-//        }
-//
-//        // Leave the block's scope
-//        symbolTable.closeScope();
-//
-//        return null; // Since a block doesn't have a return type
-//    }
-
     @Override
     public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
         // Enter a new scope for the block
@@ -109,24 +93,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         throw new PLCCompilerException("Unable to determine result type for binary expression");
     }
 
-
-
-//    @Override
-//    public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
-//        Type leftType = binaryExpr.getLeftExpr().getType();
-//        Type rightType = binaryExpr.getRightExpr().getType();
-//
-//        // For addition, both operands should be numbers (assuming addition is for integers here)
-//        if (binaryExpr.getOpKind().equals(Kind.PLUS)) {  // Adjust based on your enum values and how you identify operations
-//            if (!leftType.equals(Type.INT) || !rightType.equals(Type.INT)) {
-//                throw new PLCCompilerException("Type mismatch in binary expression.");
-//            }
-//        }
-//        // Handle other operations similarly
-//
-//        // Return the resulting type of the binary operation. For simplicity, assuming it's the type of either operand
-//        return leftType;
-//    }
 
 
     @Override
@@ -244,16 +210,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-//    @Override
-//    public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-//        Symbol symbol = symbolTable.lookup(identExpr.getName());
-//        if (symbol == null) {
-//            throw new PLCCompilerException("Variable " + identExpr.getName() + " not declared.");
-//        }
-//        return Type.valueOf(symbol.getType());
-//    }
-
-
 
     @Override
     public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException {
@@ -315,30 +271,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
 
 
-
-//    @Override
-//    public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
-//        // Visit Expr before NameDef
-//        Type exprType = null;
-//        if (declaration.getInitializer() != null) {
-//            exprType = (Type) declaration.getInitializer().visit(this, arg);
-//        }
-//
-//        // Now visit NameDef
-//        NameDef nameDef = declaration.getNameDef();
-//        nameDef.visit(this, arg);
-//        Type nameDefType = nameDef.getType();
-//
-//        // Check constraints
-//        if (exprType == null
-//                || exprType == nameDefType
-//                || (exprType == Type.STRING && nameDefType == Type.IMAGE)) {
-//            return nameDefType;
-//        } else {
-//            throw new PLCCompilerException("Type mismatch in declaration");
-//        }
-//    }
-
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
         // If the declaration has an initializer, visit it first
@@ -371,25 +303,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
         return declaration.getNameDef().getType(); // Return the type of the declaration
     }
-
-
-
-//    @Override
-//    public Object visitExpr(Expr expr, Object arg) throws PLCCompilerException {
-//        if (expr instanceof ConditionalExpr) {
-//            // handle ConditionalExpr type checking...
-//        } else if (expr instanceof BinaryExpr) {
-//            // handle BinaryExpr type checking...
-//        } // ... similar for other types of expressions
-//        else if (expr instanceof ExpandedPixelExpr) {
-//            // handle ExpandedPixelExpr type checking...
-//        } else {
-//            throw new PLCCompilerException("Unknown expression type");
-//        }
-//    }
-
-
-
 
 
 
@@ -526,27 +439,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         return returnedType;
     }
 
-
-
-
-//    @Override
-//    public Object visitWriteStatement(WriteStatement writeStatement, Object arg) throws PLCCompilerException {
-//        Expr exprToPrint = writeStatement.getExpr();
-//
-//        // Check if the expression has been type-checked
-//        if (exprToPrint.getType() == null) {
-//            throw new PLCCompilerException("Type of the expression in WriteStatement has not been determined.");
-//        }
-//
-//        // Disallow printing of VOID and PIXEL types as an example
-//        if (exprToPrint.getType() == Type.VOID || exprToPrint.getType() == Type.PIXEL) {
-//            throw new PLCCompilerException("Cannot print expressions of type " + exprToPrint.getType());
-//        }
-//
-//        // If there are other constraints or checks you'd like to add, place them here.
-//
-//        return null;  // If everything is fine, return null or adjust as per your logic.
-//    }
 
 
     @Override
