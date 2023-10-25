@@ -441,6 +441,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 
 
 
+
     @Override
     public Object visitWriteStatement(WriteStatement writeStatement, Object arg) throws PLCCompilerException {
         Expr expr = writeStatement.getExpr();
