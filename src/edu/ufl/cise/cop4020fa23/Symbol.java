@@ -1,34 +1,62 @@
+//package edu.ufl.cise.cop4020fa23;
+//
+//
+//public class Symbol {
+//    String name;
+//    String type;
+//    int serialNumber;
+//
+//    public Symbol(String name, String type, int serialNumber) {
+//        this.name = name;
+//        this.type = type;
+//        this.serialNumber = serialNumber;
+//    }
+//
+//    public String getName() {
+//    	return name;
+//    }
+//
+//    public String getType() {
+//    	return type;
+//    }
+//
+//    public int getSerialNumber() {
+//    	return serialNumber;
+//    }
+//
+//
+//
+//    @Override
+//    public String toString() {
+//        return "edu.ufl.cise.cop4020fa23.Symbol(name=" + name + ", type=" + type + ", serialNumber=" + serialNumber + ")";
+//    }
+//}
+
+
 package edu.ufl.cise.cop4020fa23;
 
+import edu.ufl.cise.cop4020fa23.ast.NameDef;  // Assuming this is the correct import for NameDef
 
 public class Symbol {
-    String name;
-    String type;
-    int serialNumber;
+    private final NameDef nameDef;
+    private final int serialNumber;
 
-    public Symbol(String name, String type, int serialNumber) {
-        this.name = name;
-        this.type = type;
+    public Symbol(NameDef nameDef, int serialNumber) {
+        this.nameDef = nameDef;
         this.serialNumber = serialNumber;
     }
 
-    public String getName() {
-    	return name;
-    }
-
-    public String getType() {
-    	return type;
+    public NameDef getNameDef() {
+        return nameDef;
     }
 
     public int getSerialNumber() {
-    	return serialNumber;
+        return serialNumber;
     }
-
-
 
     @Override
     public String toString() {
-        return "edu.ufl.cise.cop4020fa23.Symbol(name=" + name + ", type=" + type + ", serialNumber=" + serialNumber + ")";
+        return "edu.ufl.cise.cop4020fa23.Symbol(nameDef=" + nameDef + ", serialNumber=" + serialNumber + ")";
     }
 }
 

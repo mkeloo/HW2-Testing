@@ -24,12 +24,12 @@ public class NameDef extends AST {
 	final Dimension dimension;	
 	String javaName;
 	
-	/**
-	 * @param firstToken
-	 * @param type
-	 * @param ident
-	 * @param dimension
-	 */
+//	/**
+//	 * @param firstToken
+//	 * @param type
+//	 * @param ident
+//	 * @param dimension
+//	 */
 	public NameDef(IToken firstToken, IToken typeToken, Dimension dimension, IToken identToken ) {
 		super(firstToken);
 		this.typeToken = typeToken;
