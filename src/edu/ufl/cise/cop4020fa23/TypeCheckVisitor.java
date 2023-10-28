@@ -81,14 +81,45 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
+//    @Override
+//    public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
+//
+//        // If the declaration has an initializer, visit it and get its type
+//        Type initializerType = null;
+//        if (declaration.getInitializer() != null) {
+//            initializerType = (Type) declaration.getInitializer().visit(this, arg);
+//        }
+//
+//        // Visit the NameDef part of the declaration to set its type
+//        NameDef nameDef = declaration.getNameDef();
+//        nameDef.visit(this, arg);
+//
+//        // Ensure type is set for the NameDef
+//        Type declaredType = nameDef.getType();
+//        if (declaredType == null) {
+//            throw new PLCCompilerException("Type not set for variable " + nameDef.getName());
+//        }
+//
+//        // Check for re-declarations in the current scope
+//        if (symbolTable.lookup(nameDef.getName()) != null) {
+//            throw new PLCCompilerException("Variable " + nameDef.getName() + " already declared in the current scope.");
+//        }
+//
+//        // Add the variable to the symbol table
+//        symbolTable.insert(nameDef.getName(), nameDef);
+//
+//        // If the declaration has an initializer, check its type
+//        if (initializerType != null) {
+//            if (initializerType != declaredType) {
+//                throw new PLCCompilerException("Type mismatch in declaration of " + nameDef.getName());
+//            }
+//        }
+//
+//        return declaredType; // Return the type of the declaration
+//    }
+
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
-
-        // If the declaration has an initializer, visit it and get its type
-        Type initializerType = null;
-        if (declaration.getInitializer() != null) {
-            initializerType = (Type) declaration.getInitializer().visit(this, arg);
-        }
 
         // Visit the NameDef part of the declaration to set its type
         NameDef nameDef = declaration.getNameDef();
@@ -100,13 +131,16 @@ public class TypeCheckVisitor implements ASTVisitor {
             throw new PLCCompilerException("Type not set for variable " + nameDef.getName());
         }
 
-        // Check for re-declarations in the current scope
-        if (symbolTable.lookup(nameDef.getName()) != null) {
-            throw new PLCCompilerException("Variable " + nameDef.getName() + " already declared in the current scope.");
+        // If the declaration has an initializer, visit it and get its type
+        Type initializerType = null;
+        if (declaration.getInitializer() != null) {
+            initializerType = (Type) declaration.getInitializer().visit(this, arg);
         }
 
-        // Add the variable to the symbol table
-        symbolTable.insert(nameDef.getName(), nameDef);
+//        // Check for re-declarations in the current scope
+//        if (symbolTable.lookup(nameDef.getName()) != null) {
+//            throw new PLCCompilerException("Variable " + nameDef.getName() + " already declared in the current scope.");
+//        }
 
         // If the declaration has an initializer, check its type
         if (initializerType != null) {
@@ -115,9 +149,11 @@ public class TypeCheckVisitor implements ASTVisitor {
             }
         }
 
+        // Add the variable to the symbol table
+        symbolTable.insert(nameDef.getName(), nameDef);
+
         return declaredType; // Return the type of the declaration
     }
-
 
 
 
@@ -306,6 +342,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitNumLitExpr(NumLitExpr expr, Object arg) throws PLCCompilerException {
+        System.out.println("Visiting NumLitExpr with value: " + expr.getText()); // assuming a method called getValue() exists
         expr.setType(Type.INT);
         return Type.INT;
     }
@@ -472,80 +509,7 @@ public class TypeCheckVisitor implements ASTVisitor {
         return lValue.getType();
     }
 
-//    private boolean AssignmentCompatible(Type lValueType, Type exprType) {
-//        // LValue type is any and Expr type is the same as LValue type
-//        if (exprType == lValueType) {
-//            return true;
-//        }
-//
-//        // Other conditions from the table
-//        if (lValueType == Type.PIXEL && exprType == Type.INT) {
-//            return true;
-//        }
-//
-//        if (lValueType == Type.IMAGE) {
-//            if (exprType == Type.PIXEL || exprType == Type.INT || exprType == Type.STRING) {
-//                return true;
-//            }
-//        }
-//
-//        return false;
-//    }
-//
-//    @Override
-//    public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
-//        LValue lValue = assignmentStatement.getlValue();
-//
-//        // If the LValue contains a PixelSelector, pass the special context
-//        if (lValue.getPixelSelector() != null) {
-//            lValue.getPixelSelector().visit(this, IN_LVALUE_CONTEXT);
-//        }
-//
-//        // Visit the expression on the right-hand side
-//        Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
-//
-//        // Now, use the AssignmentCompatible function to check type compatibility
-//        if (!AssignmentCompatible(lValue.getType(), exprType)) {
-//            throw new PLCCompilerException("Type mismatch in assignment.");
-//        }
-//
-//        return exprType;  // Return the type of the expression
-//    }
 
-//    @Override
-//    public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
-//        LValue lValue = assignmentStatement.getlValue();
-//        Type lValueType = (Type) lValue.visit(this, arg);
-//
-//        // If the LValue contains a PixelSelector, pass the special context
-//        if (lValue.getPixelSelector() != null) {
-//            lValue.getPixelSelector().visit(this, IN_LVALUE_CONTEXT);
-//        }
-//
-//        // Visit the expression on the right-hand side
-//        Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
-//
-//        // Check compatibility using the AssignmentCompatible function
-//        if (!isAssignmentCompatible(lValueType, exprType)) {
-//            throw new PLCCompilerException("Type mismatch in assignment. LValue type: " + lValueType + ", Expr type: " + exprType);
-//        }
-//
-//        return exprType;  // Return the type of the expression
-//    }
-//
-//    private boolean isAssignmentCompatible(Type lValueType, Type exprType) {
-//        if (lValueType == exprType) {
-//            return true;
-//        }
-//        switch (lValueType) {
-//            case PIXEL:
-//                return exprType == Type.INT;
-//            case IMAGE:
-//                return exprType == Type.PIXEL || exprType == Type.INT || exprType == Type.STRING;
-//            default:
-//                return false;
-//        }
-//    }
 
 
     @Override
@@ -594,29 +558,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-
-
-//    @Override
-//    public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
-//        LValue lValue = assignmentStatement.getlValue();
-//        String varName = lValue.getName();
-//
-//        Symbol symbol = symbolTable.lookup(varName);
-//        // If the LValue contains a PixelSelector, pass the special context
-//        if (lValue.getPixelSelector() != null) {
-//            lValue.getPixelSelector().visit(this, IN_LVALUE_CONTEXT);
-//        }
-//
-//        // Visit the expression on the right-hand side
-//        Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
-//
-//        // Check the type using the NameDef object stored in the Symbol
-//        if (!exprType.equals(symbol.getNameDef().getType())) {
-//            throw new PLCCompilerException("Type mismatch in assignment.");
-//        }
-//
-//        return exprType;  // Return the type of the expression
-//    }
 
 
 
@@ -687,20 +628,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         statementBlock.getBlock().visit(this, arg);
         return null;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
