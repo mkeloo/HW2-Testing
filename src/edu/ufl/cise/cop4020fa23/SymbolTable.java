@@ -1,12 +1,10 @@
 package edu.ufl.cise.cop4020fa23;
 
+import edu.ufl.cise.cop4020fa23.ast.NameDef;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
-
-import edu.ufl.cise.cop4020fa23.ast.NameDef;
-
 
 class SymbolTable {
     private HashMap<String, LinkedList<Symbol>> table;
@@ -19,6 +17,7 @@ class SymbolTable {
         scopeStack = new Stack<>();
         currentNum = 0;
         nextNum = 1;
+        scopeStack.push(currentNum);
     }
 
     public void enterScope() {
@@ -26,75 +25,68 @@ class SymbolTable {
         scopeStack.push(currentNum);
     }
 
-    public void closeScope() {
-        currentNum = scopeStack.pop();
-    }
-
-
-    public boolean insert(String key, NameDef value) {
-        Symbol symbol = new Symbol(value, currentNum);
-
-        if (!table.containsKey(key)) {
-            table.put(key, new LinkedList<>());
-        } else {
-            // Check for re-declaration in the current scope
-            for (Symbol existingSymbol : table.get(key)) {
-                if (existingSymbol.getSerialNumber() == currentNum) {
-                    return false;  // Symbol with the same name already exists in the current scope
-                }
+    public void leaveScope() {
+        int oldScope = scopeStack.pop();
+        for (LinkedList<Symbol> list : table.values()) {
+            while (!list.isEmpty() && list.getFirst().getSerialNumber() == currentNum) {
+                list.removeFirst();
             }
         }
-
-        return table.get(key).add(symbol);  // This will return true if the addition to the list was successful
+        currentNum = oldScope;
     }
+
+    public boolean addSymbol(String name, String type, NameDef nameDef) {
+        LinkedList<Symbol> list = table.get(name);
+        if (list != null && !list.isEmpty() && list.getFirst().getSerialNumber() == currentNum) {
+            // Symbol with the same name already exists in the current scope
+            return false;
+        }
+        Symbol sym = new Symbol(name, type, currentNum, nameDef);
+        if (list == null) {
+            list = new LinkedList<>();
+            table.put(name, list);
+        }
+        list.addFirst(sym);
+        return true;
+    }
+
 
 
     public Symbol lookup(String name) {
-        if (!table.containsKey(name)) {
-            return null;
-        }
+        LinkedList<Symbol> list = table.get(name);
+        if (list == null || list.isEmpty()) return null;
 
-        // Check from the most recent scope to the outermost scope
-        for (int i = scopeStack.size() - 1; i >= 0; i--) {
-            for (Symbol symbol : table.get(name)) {
-                if (symbol.getSerialNumber() == scopeStack.get(i)) {  // Fix here: Use getter method
+        for (int scope : scopeStack) {
+            for (Symbol symbol : list) {
+                if (symbol.getSerialNumber() == scope) {
                     return symbol;
                 }
             }
         }
-
-        return null; // Name is not bound in the current or enclosing scopes
+        return null;
     }
 
-    @Override
-    public String toString() {
-        return "edu.ufl.cise.cop4020fa23.SymbolTable(table=" + table + ", scopeStack=" + scopeStack + ")";
+    public Symbol lookupCurrentScope(String name) {
+        LinkedList<Symbol> list = table.get(name);
+        if (list == null || list.isEmpty()) return null;
+
+        int currentScope = scopeStack.peek(); // Get the current scope
+        for (Symbol symbol : list) {
+            if (symbol.getSerialNumber() == currentScope) {
+                return symbol; // Return the symbol if it's in the current scope
+            }
+        }
+        return null; // Return null if the symbol is not found in the current scope
+    }
+
+
+    public void dump() {
+        System.out.println("SYMBOL TABLE");
+        for (String name : table.keySet()) {
+            LinkedList<Symbol> list = table.get(name);
+            for (Symbol s : list) {
+                System.out.println(s.getName() + " " + s.getType() + " " + s.getSerialNumber());
+            }
+        }
     }
 }
-
-
-
-
-
-
-//    public boolean insert(String key, NameDef value) {
-//        // Assuming you want to use the name and type from the NameDef for the Symbol
-//        String name = value.getName();  // Assuming NameDef has a getName() method
-//        Type type = value.getType();    // Assuming NameDef has a getType() method
-//
-//        Symbol symbol = new Symbol(name, type, currentNum);  // Assuming Symbol constructor accepts these types
-//        table.putIfAbsent(name, new LinkedList<>());
-//
-//        List<Symbol> existingSymbols = table.get(name);
-//
-//        // Check if the symbol already exists in the current scope before adding it
-//        for (Symbol existingSymbol : existingSymbols) {
-//            if (existingSymbol.getName().equals(name)) {
-//                return false;  // Indicate that the insertion failed
-//            }
-//        }
-//
-//        // Add the new symbol
-//        existingSymbols.add(symbol);
-//        return true;  // Indicate successful insertion
-//    }

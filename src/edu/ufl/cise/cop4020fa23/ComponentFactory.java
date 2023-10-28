@@ -11,6 +11,7 @@ package edu.ufl.cise.cop4020fa23;
 
 import edu.ufl.cise.cop4020fa23.ast.ASTVisitor;
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
+import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
 
 /**
  * Factory class providing static methods to create and return various components of the compiler
@@ -37,7 +38,7 @@ public class ComponentFactory {
 			return new Parser(lexer);
 		}
 
-		public static ASTVisitor makeTypeChecker() {
+		public static ASTVisitor makeTypeChecker() throws TypeCheckException {
 			return new TypeCheckVisitor();
 		}
 		
