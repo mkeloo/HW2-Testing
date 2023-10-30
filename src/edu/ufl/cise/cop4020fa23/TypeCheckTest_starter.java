@@ -80,6 +80,19 @@ class TypeCheckTest_starter {
 		return ne;
 	}
 
+//	NumLitExpr checkNumLitExpr(AST e, int value) {
+//		assertThat("", e, instanceOf(NumLitExpr.class));
+//		NumLitExpr ne = (NumLitExpr) e;
+//		System.out.println("NumLitExpr hash code (test): " + System.identityHashCode(ne));
+//		assertEquals(Integer.toString(value), ne.getText());
+//		System.out.println("NumLitExpr type (test): " + ne.getType());
+//		assertEquals(Type.INT, ne.getType());
+//
+//		return ne;
+//	}
+
+
+
 	StringLitExpr checkStringLitExpr(AST e, String value) {
 		assertThat("", e, instanceOf(StringLitExpr.class));
 		StringLitExpr se = (StringLitExpr) e;

@@ -67,20 +67,36 @@ public class Parser implements IParser {
 
 // ************************************ START OF Expression Parser Code **************************************** //
 
-	// match the expected kind and move to the next token
+//	// match the expected kind and move to the next token
+//	private IToken match(Kind expectedKind) throws LexicalException, SyntaxException {
+//		if (token.kind() == expectedKind) {
+//			try {
+//				IToken currentToken = token;
+//				token = lexer.next();
+//				return currentToken;
+//			} catch (LexicalException e) {
+//				throw new LexicalException(token.sourceLocation(), "Lexical error while trying to match " + expectedKind);
+//			}
+//		} else {
+//			throw new SyntaxException(token.sourceLocation(), "Expected " + expectedKind + " but found " + token.kind());
+//		}
+//	}
+
 	private IToken match(Kind expectedKind) throws LexicalException, SyntaxException {
+		System.out.println("Matching " + expectedKind + ", current token is " + token.kind()); // Debug print
 		if (token.kind() == expectedKind) {
 			try {
 				IToken currentToken = token;
 				token = lexer.next();
 				return currentToken;
 			} catch (LexicalException e) {
-				throw new LexicalException(token.sourceLocation(), "Lexical error while trying to match " + expectedKind);
+				throw new LexicalException(token.sourceLocation(), "Lexical error while trying to match " + expectedKind + ": " + e.getMessage());
 			}
 		} else {
 			throw new SyntaxException(token.sourceLocation(), "Expected " + expectedKind + " but found " + token.kind());
 		}
 	}
+
 
 
 	// Expr ::=  ConditionalExpr | LogicalOrExpr
@@ -232,10 +248,13 @@ public class Parser implements IParser {
 				return stringLit;
 			}
 			case NUM_LIT -> {
+				System.out.println("Creating NumLitExpr with token: " + token);  // Add this line
 				NumLitExpr numLit = new NumLitExpr(token);
+				System.out.println("NumLitExpr created with hash code: " + System.identityHashCode(numLit));  // Add this line
 				match(NUM_LIT);
 				return numLit;
 			}
+
 			case BOOLEAN_LIT -> {
 				BooleanLitExpr booleanLit = new BooleanLitExpr(token);
 				match(BOOLEAN_LIT);
@@ -473,7 +492,7 @@ public class Parser implements IParser {
 	}
 
 
-	// Method to parse the NameDef rule ::=> NameDef ::= Type IDENT | Type Dimension IDENT
+//	// Method to parse the NameDef rule ::=> NameDef ::= Type IDENT | Type Dimension IDENT
 	private NameDef nameDef() throws PLCCompilerException {
 		IToken type = type();
 		if (isKind(Kind.LSQUARE)) {
@@ -481,11 +500,11 @@ public class Parser implements IParser {
 			IToken ident = match(Kind.IDENT);
 			return new NameDef(token, type, dimension, ident);
 		}
-//		else if (isKind(Kind.RSQUARE)) {
-//			Dimension dimension = dimension();
-//			IToken ident = match(Kind.IDENT);
-//			return new NameDef(token, type, dimension, ident);
-//		}
+		else if (isKind(Kind.RSQUARE)) {
+			Dimension dimension = dimension();
+			IToken ident = match(Kind.IDENT);
+			return new NameDef(token, type, dimension, ident);
+		}
 		else {
 			IToken ident = match(Kind.IDENT);
 			return new NameDef(token, type, null, ident);
@@ -493,7 +512,25 @@ public class Parser implements IParser {
 	}
 
 
-	// Method to parse the Dimension rule ::=> [ Expr , Expr ]
+
+// Method to parse the NameDef rule ::=> NameDef ::= Type IDENT | Type Dimension IDENT
+//private NameDef nameDef() throws PLCCompilerException {
+//	IToken type = type();
+//	Dimension dimension = null;
+//	if (isKind(Kind.LSQUARE)) {
+//		dimension = dimension();
+//	}
+//	IToken ident = match(Kind.IDENT);
+//	return new NameDef(token, type, dimension, ident);
+//}
+
+
+
+
+
+
+
+//	// Method to parse the Dimension rule ::=> [ Expr , Expr ]
 	private Dimension dimension() throws PLCCompilerException {
 		IToken firstToken = match(Kind.LSQUARE);
 		Expr expr1 = expr();

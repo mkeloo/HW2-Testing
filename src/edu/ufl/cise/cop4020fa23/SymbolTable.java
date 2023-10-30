@@ -1,92 +1,209 @@
+//// Purpose: Symbol table for the type checker
+//package edu.ufl.cise.cop4020fa23;
+//
+//import edu.ufl.cise.cop4020fa23.ast.NameDef;
+//import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
+//
+//import java.util.HashMap;
+//import java.util.LinkedList;
+//import java.util.Stack;
+//
+//class SymbolTable {
+//    private final HashMap<String, LinkedList<Symbol>> table;
+//    private final Stack<Integer> scopeStack;
+//    private int currentScope;
+//    private int nextScope;
+//
+//    public SymbolTable() {
+//        table = new HashMap<>();
+//        scopeStack = new Stack<>();
+//        currentScope = 0;
+//        nextScope = 1;
+//        scopeStack.push(currentScope);
+//    }
+//
+//    public void enterScope() {
+//        currentScope = nextScope++;
+//        scopeStack.push(currentScope);
+//    }
+//
+//    public void leaveScope() {
+//        if (scopeStack.size() > 1) {  // Ensure that we don't leave the global scope
+//            int leavingScope = scopeStack.pop();
+//            for (LinkedList<Symbol> list : table.values()) {
+//                while (!list.isEmpty() && list.getFirst().getSerialNumber() == leavingScope) {
+//                    list.removeFirst();
+//                }
+//            }
+//            currentScope = scopeStack.peek();  // Update currentScope to the new top of the stack
+//        } else {
+//            throw new IllegalStateException("Cannot leave global scope");
+//        }
+//    }
+//
+//    public void insert(NameDef nameDef) throws TypeCheckException {
+//        String name = nameDef.getIdentToken().text();
+//        LinkedList<Symbol> list = table.get(name);
+//
+////        if (list != null && !list.isEmpty() && list.getFirst().getSerialNumber() == currentScope) {
+////            throw new TypeCheckException("Name already defined in the current scope: " + name);
+////        }
+//
+//        Symbol symbol = new Symbol(name, currentScope, nameDef);
+//
+//        if (list == null) {
+//            list = new LinkedList<>();
+//            table.put(name, list);
+//        }
+//
+//        list.addFirst(symbol);
+//    }
+//
+//    public NameDef lookup(String name) {
+//        LinkedList<Symbol> list = table.get(name);
+//        if (list == null || list.isEmpty()) {
+//            return null;
+//        }
+//
+//        for (int i = scopeStack.size() - 1; i >= 0; i--) {
+//            int scope = scopeStack.get(i);
+//            for (Symbol symbol : list) {
+//                if (symbol.getSerialNumber() == scope) {
+//                    return symbol.getNameDef();
+//                }
+//            }
+//        }
+//        return null;
+//    }
+//}
+
+
 package edu.ufl.cise.cop4020fa23;
 
 import edu.ufl.cise.cop4020fa23.ast.NameDef;
+import edu.ufl.cise.cop4020fa23.exceptions.TypeCheckException;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
 
 class SymbolTable {
-    private HashMap<String, LinkedList<Symbol>> table;
-    private Stack<Integer> scopeStack;
-    private int currentNum;
-    private int nextNum;
+    private final HashMap<String, LinkedList<Symbol>> table;
+    private final Stack<Integer> scopeStack;
+    private int currentScope;
+    private int nextScope;
 
     public SymbolTable() {
         table = new HashMap<>();
         scopeStack = new Stack<>();
-        currentNum = 0;
-        nextNum = 1;
-        scopeStack.push(currentNum);
+        currentScope = 0;
+        nextScope = 1;
+        scopeStack.push(currentScope);
     }
 
     public void enterScope() {
-        currentNum = nextNum++;
-        scopeStack.push(currentNum);
+        currentScope = nextScope++;
+        scopeStack.push(currentScope);
     }
 
     public void leaveScope() {
-        int oldScope = scopeStack.pop();
-        for (LinkedList<Symbol> list : table.values()) {
-            while (!list.isEmpty() && list.getFirst().getSerialNumber() == currentNum) {
-                list.removeFirst();
+        if (!scopeStack.isEmpty()) {
+            int oldScope = scopeStack.pop();
+            for (LinkedList<Symbol> list : table.values()) {
+                while (!list.isEmpty() && list.getFirst().getSerialNumber() == oldScope) {
+                    list.removeFirst();
+                }
+            }
+            if (!scopeStack.isEmpty()) {
+                currentScope = scopeStack.peek();
             }
         }
-        currentNum = oldScope;
     }
 
-    public boolean addSymbol(String name, String type, NameDef nameDef) {
+//    public void insert(NameDef nameDef) throws TypeCheckException {
+//        System.out.println("Inserting to SymbolTable: " + nameDef.getName() + " in scope " + currentScope);
+//        String name = nameDef.getName();
+//        LinkedList<Symbol> list = table.get(name);
+//        if (list == null) {
+//            list = new LinkedList<>();
+//            table.put(name, list);
+//        } else {
+//            for (Symbol symbol : list) {
+//                if (symbol.getSerialNumber() == currentScope) {
+//                    throw new TypeCheckException("Name already defined in the current scope: " + name);
+//                }
+//            }
+//        }
+//        Symbol symbol = new Symbol(name, currentScope, nameDef);
+//        list.addFirst(symbol);
+//    }
+
+
+    public void insert(NameDef nameDef) throws TypeCheckException {
+        System.out.println("Inserting to SymbolTable: " + nameDef.getName() + " in scope " + currentScope);
+        String name = nameDef.getName();
         LinkedList<Symbol> list = table.get(name);
-        if (list != null && !list.isEmpty() && list.getFirst().getSerialNumber() == currentNum) {
-            // Symbol with the same name already exists in the current scope
-            return false;
-        }
-        Symbol sym = new Symbol(name, type, currentNum, nameDef);
         if (list == null) {
             list = new LinkedList<>();
             table.put(name, list);
+        } else {
+            for (Symbol symbol : list) {
+                if (symbol.getSerialNumber() == currentScope) {
+                    if (symbol.getNameDef() == nameDef) {
+                        // The same declaration is being revisited, safely ignore
+                        return;
+                    } else {
+                        throw new TypeCheckException("Name already defined in the current scope: " + name);
+                    }
+                }
+            }
         }
-        list.addFirst(sym);
-        return true;
+        Symbol symbol = new Symbol(name, currentScope, nameDef);
+        list.addFirst(symbol);
     }
 
 
 
-    public Symbol lookup(String name) {
+/*    public NameDef lookup(String name) {
         LinkedList<Symbol> list = table.get(name);
-        if (list == null || list.isEmpty()) return null;
+        if (list != null) {
+            for (int scope : scopeStack) {
+                for (Symbol symbol : list) {
+                    if (symbol.getSerialNumber() == scope) {
+                        return symbol.getNameDef();
+                    }
+                }
+            }
+        }
+        return null;
+    }*/
 
-        for (int scope : scopeStack) {
-            for (Symbol symbol : list) {
-                if (symbol.getSerialNumber() == scope) {
-                    return symbol;
+    public NameDef lookup(String name) {
+        LinkedList<Symbol> list = table.get(name);
+        if (list != null) {
+            for (int i = scopeStack.size() - 1; i >= 0; i--) {
+                int scope = scopeStack.get(i);
+                for (Symbol symbol : list) {
+                    if (symbol.getSerialNumber() == scope) {
+                        return symbol.getNameDef();
+                    }
                 }
             }
         }
         return null;
     }
 
-    public Symbol lookupCurrentScope(String name) {
+
+    public NameDef lookupCurrentScope(String name) {
         LinkedList<Symbol> list = table.get(name);
-        if (list == null || list.isEmpty()) return null;
-
-        int currentScope = scopeStack.peek(); // Get the current scope
-        for (Symbol symbol : list) {
-            if (symbol.getSerialNumber() == currentScope) {
-                return symbol; // Return the symbol if it's in the current scope
+        if (list != null) {
+            for (Symbol symbol : list) {
+                if (symbol.getSerialNumber() == currentScope) {
+                    return symbol.getNameDef();
+                }
             }
         }
-        return null; // Return null if the symbol is not found in the current scope
+        return null;
     }
 
-
-    public void dump() {
-        System.out.println("SYMBOL TABLE");
-        for (String name : table.keySet()) {
-            LinkedList<Symbol> list = table.get(name);
-            for (Symbol s : list) {
-                System.out.println(s.getName() + " " + s.getType() + " " + s.getSerialNumber());
-            }
-        }
-    }
 }
