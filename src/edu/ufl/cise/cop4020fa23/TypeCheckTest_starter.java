@@ -1115,4 +1115,449 @@ class TypeCheckTest_starter {
 		});
 	}
 
+
+   /* ======================= Additional TEST CASES ======================= */
+
+
+	/* ======================= From Classmates ======================= */
+
+	static final boolean VERBOSE = true;
+
+
+	void show(Object obj) {
+		if (VERBOSE) {
+			System.out.println(obj);
+		}
+	}
+
+
+
+	@Test
+	void unitTestLValueTypeWhenPixelSelector() throws PLCCompilerException {
+		String input = """
+         image f()<:
+         string i = "url";
+         int x;
+         int y;
+         i[x,y]:red = [x,y,0]; ## i must be image
+         :>
+         """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestLValueTypeWhenPixelSelector: " + e.getMessage());
+	}
+
+
+	@Test
+	void unitTestLValueTypeWhenChannelSelector() throws PLCCompilerException {
+		String input = """
+         image f()<:
+         string i = "url";
+         int x;
+         int y;
+         i:red = [x,y,0]; ## i must be image or pixel
+         :>
+         """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestLValueTypeWhenChannelSelector: " + e.getMessage());
+	}
+
+
+	@Test
+	void unitTestLValuePixelSelectorType() throws PLCCompilerException {
+		String input = """
+         image f()<:
+         image i = "url";
+         string x;
+         string y;
+         i[x,y] = [x,y,0]; ##x and y must be int
+         :>
+         """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestLValuePixelSelectorType: " + e.getMessage());
+	}
+
+
+	@Test
+	void unitTestMixedSyntheticPixelSelector() throws PLCCompilerException {
+		String input = """
+         image f() <:
+            image x;
+            int z = 2;
+            x[z,y] = [y,z,z]; ## Only one of these has to have a synthetic name definition
+            ^x;
+            :>
+         """;
+		AST ast = getDecoratedAST(input);
+		Program program0 = checkProgram(ast, Type.IMAGE, "f");
+		List<NameDef> params1 = program0.getParams();
+		assertEquals(0, params1.size());
+		Block programBlock2 = ((Program) ast).getBlock();
+		List<BlockElem> blockElemList3 = programBlock2.getElems();
+		assertEquals(4, blockElemList3.size());
+		BlockElem blockElem4 = blockElemList3.get(0);
+		checkDec(blockElem4);
+		NameDef nameDef5 = ((Declaration) blockElem4).getNameDef();
+		checkNameDef(nameDef5, Type.IMAGE, "x");
+		BlockElem blockElem6 = blockElemList3.get(1);
+		NameDef nameDef7 = ((Declaration) blockElem6).getNameDef();
+		checkNameDef(nameDef7, Type.INT, "z");
+		Expr expr8 = ((Declaration) blockElem6).getInitializer();
+		checkNumLitExpr(expr8, 2);
+		BlockElem blockElem9 = blockElemList3.get(2);
+		assertThat("", blockElem9, instanceOf(AssignmentStatement.class));
+		LValue LValue10 = ((AssignmentStatement) blockElem9).getlValue();
+		assertThat("", LValue10, instanceOf(LValue.class));
+		String name11 = LValue10.getName();
+		assertEquals("x", name11);
+		PixelSelector pixel9 = LValue10.getPixelSelector();
+		Expr x12 = pixel9.xExpr();
+		checkIdentExpr(x12, "z", Type.INT);
+		Expr y13 = pixel9.yExpr();
+		checkIdentExpr(y13, "y", Type.INT);
+		assertNull(LValue10.getChannelSelector());
+		Expr expr14 = ((AssignmentStatement) blockElem9).getE();
+		Expr red15 = ((ExpandedPixelExpr) expr14).getRed();
+		checkIdentExpr(red15, "y", Type.INT);
+		Expr green16 = ((ExpandedPixelExpr) expr14).getGreen();
+		checkIdentExpr(green16, "z", Type.INT);
+		Expr blue17 = ((ExpandedPixelExpr) expr14).getBlue();
+		checkIdentExpr(blue17, "z", Type.INT);
+		BlockElem blockElem18 = blockElemList3.get(3);
+		assertThat("", blockElem18, instanceOf(ReturnStatement.class));
+		Expr returnValueExpr19 = ((ReturnStatement) blockElem18).getE();
+		checkIdentExpr(returnValueExpr19, "x", Type.IMAGE);
+	}
+
+
+	@Test
+	void unitTestVariableNotInScope1() throws PLCCompilerException {
+		String input = """
+         int f()<:
+         int i = 3;
+         do i > 0 -> <:
+            string xx = "hello";
+            write xx;
+            i = i -1;
+         :>
+         od;
+         i = 3;
+         do i > 0 -> <:
+            write xx;  ##error xx not visible here
+            i = i -1;
+         :>
+         od;
+         ^ i;
+         :>
+         """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestVariableNotInScope1: " + e.getMessage());
+	}
+
+
+	@Test
+	void unitTestVariableNotInScope2() throws PLCCompilerException {
+		String input = """
+         int f() <:
+            image x;
+            x[z,y] = [y,z,z];
+            ^y; ##y not visible here
+            :>
+         """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestVariableNotInScope2: " + e.getMessage());
+	}
+
+
+	@Test
+	void unitTestVariableAlreadyInScope() throws PLCCompilerException {
+		String input = """
+         int f() <:
+            image x;
+            int x; ## x was already defined
+            :>
+         """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestVariableAlreadyInScope: " + e.getMessage());
+	}
+
+
+
+
+//	/* ======================= From US ======================= */
+
+	/* ======================= MOKSH ======================= */
+
+
+	@Test
+	void test25() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            string x = "hello";
+            x = 5;  ## Assignment error: x should be of type string
+            ^x;
+        :>
+        """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestAssignmentToIncorrectType: " + e.getMessage());
+	}
+
+
+	@Test
+	void test26() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            string x = "hello";
+            int y = x + 5;  ## Invalid binary expression, cannot add string and int
+            ^y;
+        :>
+        """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			AST ast = getDecoratedAST(input);
+			Program program = checkProgram(ast, Type.INT, "f");
+			Block programBlock = program.getBlock();
+			List<BlockElem> blockElems = programBlock.getElems();
+			assertEquals(3, blockElems.size(), "program should contain three statements");
+			Declaration declX = checkDec(blockElems.get(0));
+			NameDef nameDefX = declX.getNameDef();
+			checkNameDef(nameDefX, Type.STRING, "x");
+			Expr initX = declX.getInitializer();
+			checkStringLitExpr(initX, "hello");
+			Declaration declY = checkDec(blockElems.get(1));
+			NameDef nameDefY = declY.getNameDef();
+			checkNameDef(nameDefY, Type.INT, "y");
+			Expr initY = declY.getInitializer();
+			BinaryExpr binaryExpr = checkBinaryExpr(initY, Kind.PLUS, Type.INT);
+			Expr leftExpr = binaryExpr.getLeftExpr();
+			checkIdentExpr(leftExpr, "x", Type.STRING);
+			Expr rightExpr = binaryExpr.getRightExpr();
+			checkNumLitExpr(rightExpr, 5);
+
+		});
+		show("Error message from unitTestInvalidBinaryExpression: " + e.getMessage());
+	}
+
+
+	@Test
+	void test27() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            int x = 5;
+            int y = -x;  ## Valid unary expression, negating an int
+            ^y;
+        :>
+        """;
+		AST ast = getDecoratedAST(input);
+		Program program = checkProgram(ast, Type.INT, "f");
+		Block programBlock = program.getBlock();
+		List<BlockElem> blockElems = programBlock.getElems();
+		assertEquals(3, blockElems.size(), "program should contain three statements");
+		Declaration declX = checkDec(blockElems.get(0));
+		NameDef nameDefX = declX.getNameDef();
+		checkNameDef(nameDefX, Type.INT, "x");
+		Expr initX = declX.getInitializer();
+		checkNumLitExpr(initX, 5);
+		Declaration declY = checkDec(blockElems.get(1));
+		NameDef nameDefY = declY.getNameDef();
+		checkNameDef(nameDefY, Type.INT, "y");
+		Expr initY = declY.getInitializer();
+		UnaryExpr unaryExpr = checkUnaryExpr(initY, Kind.MINUS, Type.INT);
+		checkIdentExpr(unaryExpr.getExpr(), "x", Type.INT);
+	}
+
+
+	@Test
+	void test28() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            int x;
+            x:red = 5;  ## x is not an image or pixel, so channel selector is invalid
+            ^x;
+        :>
+        """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestChannelSelectorOnNonImage: " + e.getMessage());
+	}
+
+
+	@Test
+	void test29() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            int x = 10;
+            int y = 20;
+            int z = x + y;  ## Valid binary expression, adding two integers
+            ^z;
+        :>
+        """;
+		AST ast = getDecoratedAST(input);
+		Program program = checkProgram(ast, Type.INT, "f");
+		Block programBlock = program.getBlock();
+		List<BlockElem> blockElems = programBlock.getElems();
+		assertEquals(4, blockElems.size(), "program should contain four statements");
+		Declaration declX = checkDec(blockElems.get(0));
+		NameDef nameDefX = declX.getNameDef();
+		checkNameDef(nameDefX, Type.INT, "x");
+		Expr initX = declX.getInitializer();
+		checkNumLitExpr(initX, 10);
+		Declaration declY = checkDec(blockElems.get(1));
+		NameDef nameDefY = declY.getNameDef();
+		checkNameDef(nameDefY, Type.INT, "y");
+		Expr initY = declY.getInitializer();
+		checkNumLitExpr(initY, 20);
+		Declaration declZ = checkDec(blockElems.get(2));
+		NameDef nameDefZ = declZ.getNameDef();
+		checkNameDef(nameDefZ, Type.INT, "z");
+		Expr initZ = declZ.getInitializer();
+		BinaryExpr addExpr = checkBinaryExpr(initZ, Kind.PLUS, Type.INT);
+		Expr leftExpr = addExpr.getLeftExpr();
+		checkIdentExpr(leftExpr, "x", Type.INT);
+		Expr rightExpr = addExpr.getRightExpr();
+		checkIdentExpr(rightExpr, "y", Type.INT);
+	}
+
+
+	/* ======================= DANIEL ======================= */
+
+
+	@Test
+	void test30() throws PLCCompilerException {
+		String input = """
+		int f(string x) <:
+			^x;
+		:>
+		""";
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestIncorrectParameterType: " + e.getMessage());
+	}
+
+
+	@Test
+	void test31() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            int a = 5;
+            int b = 4;
+            int result = a * b;  ## Valid binary expression, multiplying two integers
+            ^result;
+        :>
+        """;
+		AST ast = getDecoratedAST(input);
+		Program program = checkProgram(ast, Type.INT, "f");
+		Block programBlock = program.getBlock();
+		List<BlockElem> blockElems = programBlock.getElems();
+		assertEquals(4, blockElems.size(), "program should contain four statements");
+		Declaration declA = checkDec(blockElems.get(0));
+		NameDef nameDefA = declA.getNameDef();
+		checkNameDef(nameDefA, Type.INT, "a");
+		Expr initA = declA.getInitializer();
+		checkNumLitExpr(initA, 5);
+		Declaration declB = checkDec(blockElems.get(1));
+		NameDef nameDefB = declB.getNameDef();
+		checkNameDef(nameDefB, Type.INT, "b");
+		Expr initB = declB.getInitializer();
+		checkNumLitExpr(initB, 4);
+		Declaration declResult = checkDec(blockElems.get(2));
+		NameDef nameDefResult = declResult.getNameDef();
+		checkNameDef(nameDefResult, Type.INT, "result");
+		Expr initResult = declResult.getInitializer();
+		BinaryExpr multExpr = checkBinaryExpr(initResult, Kind.TIMES, Type.INT);
+		Expr leftExpr = multExpr.getLeftExpr();
+		checkIdentExpr(leftExpr, "a", Type.INT);
+		Expr rightExpr = multExpr.getRightExpr();
+		checkIdentExpr(rightExpr, "b", Type.INT);
+	}
+
+	@Test
+	void test32() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            ^"hello";  ## Return type should be int, not string
+        :>
+        """;
+		TypeCheckException e = assertThrows(TypeCheckException.class, () -> {
+			getDecoratedAST(input);
+		});
+		show("Error message from unitTestIncorrectReturnType: " + e.getMessage());
+	}
+
+
+	@Test
+	void test33() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            int m = 15;
+            int n = 7;
+            int diff = m - n;  ## Valid binary expression, subtracting two integers
+            ^diff;
+        :>
+        """;
+		AST ast = getDecoratedAST(input);
+		Program program = checkProgram(ast, Type.INT, "f");
+
+		Block programBlock = program.getBlock();
+		List<BlockElem> blockElems = programBlock.getElems();
+		assertEquals(4, blockElems.size(), "program should contain four statements");
+		Declaration declM = checkDec(blockElems.get(0));
+		NameDef nameDefM = declM.getNameDef();
+		checkNameDef(nameDefM, Type.INT, "m");
+		Expr initM = declM.getInitializer();
+		checkNumLitExpr(initM, 15);
+		Declaration declN = checkDec(blockElems.get(1));
+		NameDef nameDefN = declN.getNameDef();
+		checkNameDef(nameDefN, Type.INT, "n");
+		Expr initN = declN.getInitializer();
+		checkNumLitExpr(initN, 7);
+		Declaration declDiff = checkDec(blockElems.get(2));
+		NameDef nameDefDiff = declDiff.getNameDef();
+		checkNameDef(nameDefDiff, Type.INT, "diff");
+		Expr initDiff = declDiff.getInitializer();
+		BinaryExpr subExpr = checkBinaryExpr(initDiff, Kind.MINUS, Type.INT);
+		Expr leftExpr = subExpr.getLeftExpr();
+		checkIdentExpr(leftExpr, "m", Type.INT);
+		Expr rightExpr = subExpr.getRightExpr();
+		checkIdentExpr(rightExpr, "n", Type.INT);
+
+	}
+
+
+	@Test
+	void test34() throws PLCCompilerException {
+		String input = """
+        int f() <:
+            int x = 10;
+            write x;  ## x is defined
+            ^x;
+        :>
+        """;
+		AST ast = getDecoratedAST(input);
+		Program program = checkProgram(ast, Type.INT, "f");
+
+		Block programBlock = program.getBlock();
+		List<BlockElem> blockElems = programBlock.getElems();
+		assertEquals(3, blockElems.size(), "program should contain three statements");
+		Declaration declX = checkDec(blockElems.get(0));
+		NameDef nameDefX = declX.getNameDef();
+		checkNameDef(nameDefX, Type.INT, "x");
+		Expr initX = declX.getInitializer();
+		checkNumLitExpr(initX, 10);
+	}
+
 }

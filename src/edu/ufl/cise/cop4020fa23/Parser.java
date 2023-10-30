@@ -67,23 +67,9 @@ public class Parser implements IParser {
 
 // ************************************ START OF Expression Parser Code **************************************** //
 
-//	// match the expected kind and move to the next token
-//	private IToken match(Kind expectedKind) throws LexicalException, SyntaxException {
-//		if (token.kind() == expectedKind) {
-//			try {
-//				IToken currentToken = token;
-//				token = lexer.next();
-//				return currentToken;
-//			} catch (LexicalException e) {
-//				throw new LexicalException(token.sourceLocation(), "Lexical error while trying to match " + expectedKind);
-//			}
-//		} else {
-//			throw new SyntaxException(token.sourceLocation(), "Expected " + expectedKind + " but found " + token.kind());
-//		}
-//	}
-
+	// match the expected kind and move to the next token
 	private IToken match(Kind expectedKind) throws LexicalException, SyntaxException {
-		System.out.println("Matching " + expectedKind + ", current token is " + token.kind()); // Debug print
+//		System.out.println("Matching " + expectedKind + ", current token is " + token.kind()); // Debug print
 		if (token.kind() == expectedKind) {
 			try {
 				IToken currentToken = token;
@@ -119,6 +105,7 @@ public class Parser implements IParser {
 		Expr falseExpr = expr();
 		return new ConditionalExpr(token, condition, trueExpr, falseExpr);
 	}
+
 
 
 	// LogicalAndExpr ::=  ComparisonExpr ( (   &   |  &&   )  ComparisonExpr)*
@@ -248,13 +235,10 @@ public class Parser implements IParser {
 				return stringLit;
 			}
 			case NUM_LIT -> {
-				System.out.println("Creating NumLitExpr with token: " + token);  // Add this line
 				NumLitExpr numLit = new NumLitExpr(token);
-				System.out.println("NumLitExpr created with hash code: " + System.identityHashCode(numLit));  // Add this line
 				match(NUM_LIT);
 				return numLit;
 			}
-
 			case BOOLEAN_LIT -> {
 				BooleanLitExpr booleanLit = new BooleanLitExpr(token);
 				match(BOOLEAN_LIT);
