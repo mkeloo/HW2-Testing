@@ -508,58 +508,14 @@ public class Parser implements IParser {
 	}
 
 
-//	// Method to parse the Dimension rule ::=> Dimension ::= [ Expr , Expr ]
-//	private Dimension dimension() throws SyntaxException, PLCCompilerException {
-//		match(LSQUARE);
-//		Expr width = expr();
-//		match(COMMA);
-//		Expr height = expr();
-//		match(RSQUARE);
-//		return new Dimension(token, width, height);
-//	}
-
-
-//	private Dimension dimension() throws SyntaxException, PLCCompilerException {
-//		System.out.println("Entering dimension, current token: " + token);
-//		match(LSQUARE);
-//		System.out.println("After matching [, current token: " + token);
-//		Expr width = expr();
-//		System.out.println("After parsing width, current token: " + token);
-//		match(COMMA);
-//		System.out.println("After matching ,, current token: " + token);
-//		Expr height = expr();
-//		System.out.println("After parsing height, current token: " + token);
-//		match(RSQUARE);
-//		System.out.println("After matching ], current token: " + token);
-//		return new Dimension(token, width, height);
-//	}
-
-	private IToken createDummyNumLitToken(int value, SourceLocation location) {
-		char[] valueChars = Integer.toString(value).toCharArray();
-		return new Token(Kind.NUM_LIT, 0, valueChars.length, valueChars, location);
-	}
-
+	// Method to parse the Dimension rule ::=> Dimension ::= [ Expr , Expr ]
 	private Dimension dimension() throws SyntaxException, PLCCompilerException {
-		if (token.kind() == LSQUARE) {
-			match(LSQUARE);
-			if (token.kind() == RSQUARE) { // For the "[]" case
-				IToken dummyToken = createDummyNumLitToken(0, token.sourceLocation());
-				match(RSQUARE);
-				return new Dimension(dummyToken, new NumLitExpr(dummyToken), new NumLitExpr(dummyToken));
-			} else {
-				Expr width = expr();
-				match(COMMA);
-				Expr height = expr();
-				match(RSQUARE);
-				return new Dimension(token, width, height);
-			}
-		} else if (token.kind() == BOX) { // For the BOX ("[]") case
-			IToken dummyToken = createDummyNumLitToken(0, token.sourceLocation());
-			match(BOX);
-			return new Dimension(dummyToken, new NumLitExpr(dummyToken), new NumLitExpr(dummyToken));
-		} else {
-			throw new SyntaxException(token.sourceLocation(), "Expected LSQUARE or BOX but found " + token.kind());
-		}
+		match(LSQUARE);
+		Expr width = expr();
+		match(COMMA);
+		Expr height = expr();
+		match(RSQUARE);
+		return new Dimension(token, width, height);
 	}
 
 
@@ -594,38 +550,7 @@ public class Parser implements IParser {
 
 
 
-//	// Method to parse the Declaration rule ::=> Declaration::= NameDef | NameDef = Expr
-//	private Declaration declaration() throws SyntaxException, PLCCompilerException {
-//		NameDef name = nameDef();
-//		if (isKind(Kind.ASSIGN)) {
-//			match(Kind.ASSIGN);
-//			Expr expr = expr();
-//			return new Declaration(name.getTypeToken(), name, expr);
-//		} else {
-//			return new Declaration(name.getTypeToken(), name, null);
-//		}
-//	}
-
 	// Method to parse the Declaration rule ::=> Declaration::= NameDef | NameDef = Expr
-//	private Declaration declaration() throws SyntaxException, PLCCompilerException {
-//		NameDef name = nameDef();
-//
-//		if (name.getType() == Type.IMAGE && isKind(Kind.LSQUARE)) {
-//			Dimension dimension = dimension();
-//			IToken typeToken = name.getTypeToken();
-//			IToken identToken = name.getIdentToken();
-//			name = new NameDef(typeToken, typeToken, dimension, identToken);
-//		}
-//
-//		if (isKind(Kind.ASSIGN)) {
-//			match(Kind.ASSIGN);
-//			Expr expr = expr();
-//			return new Declaration(name.getTypeToken(), name, expr);
-//		} else {
-//			return new Declaration(name.getTypeToken(), name, null);
-//		}
-//	}
-
 	private Declaration declaration() throws SyntaxException, PLCCompilerException {
 		NameDef name = nameDef();
 

@@ -530,7 +530,7 @@ public class Lexer implements ILexer {
     private IToken getiToken(Kind kind, int startPos, int length, char[] chars) {
         char[] value = Arrays.copyOfRange(chars, startPos, startPos + length);
         IToken token = new Token(kind, startPos, length, value, new SourceLocation(line, columnPos));
-        System.out.println("Token: " + kind + " and value: " + Arrays.toString(value) + " at position " + startPos);
+//        System.out.println("Token: " + kind + " and value: " + Arrays.toString(value) + " at position " + startPos);
         columnPos += length;
         return token;
     }

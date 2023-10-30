@@ -108,7 +108,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException, TypeCheckException {
-        System.out.println("Visiting Declaration: " + declaration.getNameDef().getName());
+//        System.out.println("Visiting Declaration: " + declaration.getNameDef().getName());
 
         // Visit the initializer first, if it exists
         Expr initializer = declaration.getInitializer();
@@ -330,7 +330,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 
     @Override
     public Object visitStringLitExpr(StringLitExpr expr, Object arg) throws TypeCheckException, PLCCompilerException {
-        System.out.println("Visiting NumLitExpr with value: " + expr.getText()); // assuming a method called getValue() exists
+//        System.out.println("Visiting NumLitExpr with value: " + expr.getText()); // assuming a method called getValue() exists
         Type type = Type.STRING;
         expr.setType(Type.STRING);
         return type;
