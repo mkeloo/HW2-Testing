@@ -320,7 +320,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-    /* ======================= MOKSH ======================= */
 
 
     @Override
@@ -371,6 +370,7 @@ public class TypeCheckVisitor implements ASTVisitor {
         return Type.IMAGE;
     }
 
+    /* ======================= MOKSH ======================= */
 
     @Override
     public Object visitExpandedPixelExpr(ExpandedPixelExpr expr, Object arg) throws TypeCheckException, PLCCompilerException {
