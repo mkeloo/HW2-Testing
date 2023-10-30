@@ -321,9 +321,12 @@ public class Parser implements IParser {
 		Expr e2 = expr();
 		match(COMMA);
 		Expr e3 = expr();
-		match(RSQUARE);
+		if (isKind(RSQUARE)) {
+			match(RSQUARE);
+		}
 		return new ExpandedPixelExpr(token, e1, e2, e3);
 	}
+
 // ************************************ START OF Expression Parser Code **************************************** //
 
 
@@ -492,7 +495,7 @@ public class Parser implements IParser {
 	}
 
 
-//	// Method to parse the NameDef rule ::=> NameDef ::= Type IDENT | Type Dimension IDENT
+	// Method to parse the NameDef rule ::=> NameDef ::= Type IDENT | Type Dimension IDENT
 	private NameDef nameDef() throws PLCCompilerException {
 		IToken type = type();
 		if (isKind(Kind.LSQUARE)) {
@@ -510,6 +513,17 @@ public class Parser implements IParser {
 			return new NameDef(token, type, null, ident);
 		}
 	}
+
+//	private NameDef nameDef() throws PLCCompilerException {
+//		IToken type = type();
+//		Dimension dimension = null;
+//		if (isKind(Kind.LSQUARE)) {
+//			dimension = dimension();
+//		}
+//		IToken ident = match(Kind.IDENT);
+//		return new NameDef(token, type, dimension, ident);
+//	}
+
 
 
 
@@ -531,14 +545,25 @@ public class Parser implements IParser {
 
 
 //	// Method to parse the Dimension rule ::=> [ Expr , Expr ]
-	private Dimension dimension() throws PLCCompilerException {
-		IToken firstToken = match(Kind.LSQUARE);
-		Expr expr1 = expr();
-		match(Kind.COMMA);
-		Expr expr2 = expr();
-		match(Kind.RSQUARE);
-		return new Dimension(firstToken, expr1, expr2);
+//	private Dimension dimension() throws PLCCompilerException {
+//		IToken firstToken = match(Kind.LSQUARE);
+//		Expr expr1 = expr();
+//		match(Kind.COMMA);
+//		Expr expr2 = expr();
+//		match(Kind.RSQUARE);
+//		return new Dimension(firstToken, expr1, expr2);
+//	}
+
+	private Dimension dimension() throws SyntaxException, PLCCompilerException {
+		match(LSQUARE);
+		Expr width = expr();
+		match(COMMA);
+		Expr height = expr();
+		match(RSQUARE);
+		return new Dimension(token, width, height);
 	}
+
+
 
 
 
