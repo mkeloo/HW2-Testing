@@ -17,17 +17,17 @@ public class TypeCheckVisitor implements ASTVisitor {
     private static final String IN_LVALUE_CONTEXT = "IN_LVALUE_CONTEXT";
     public static final String IN_PIXEL_EXPRESSION_CONTEXT = "IN_PIXEL_EXPRESSION_CONTEXT";
 
-
     Type currentReturnType = null;
-
 
     // creatinf stack to store return types of functions/programs
     private Stack<Type> returnTypeStack = new Stack<>();
 
-
     public TypeCheckVisitor() throws TypeCheckException {
         this.symbolTable = new SymbolTable();
     }
+
+
+    /* ======================= DANIEL ======================= */
 
 
     @Override
@@ -80,7 +80,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException, TypeCheckException {
         Expr initializer = declaration.getInitializer();
@@ -114,7 +113,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
 
 
-
     @Override
     public Object visitConditionalExpr(ConditionalExpr conditionalExpr, Object arg) throws TypeCheckException, PLCCompilerException {
         Type guardType = (Type) conditionalExpr.getGuardExpr().visit(this, arg);
@@ -129,7 +127,6 @@ public class TypeCheckVisitor implements ASTVisitor {
         conditionalExpr.setType(trueType);
         return trueType;
     }
-
 
     @Override
     public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws TypeCheckException, PLCCompilerException {
@@ -203,7 +200,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-
     @Override
     public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg) throws TypeCheckException, PLCCompilerException {
         Type operandType = (Type) unaryExpr.getExpr().visit(this, arg);
@@ -239,8 +235,6 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-
-
     @Override
     public Object visitPostfixExpr(PostfixExpr postfixExpr, Object arg) throws TypeCheckException, PLCCompilerException {
         Type primaryType = (Type) postfixExpr.primary().visit(this, arg);
@@ -268,8 +262,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
         return primaryType;
     }
-
-
 
 
     @Override
@@ -310,14 +302,11 @@ public class TypeCheckVisitor implements ASTVisitor {
     }
 
 
-
-
     @Override
     public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws TypeCheckException, PLCCompilerException {
         booleanLitExpr.setType(Type.BOOLEAN);
         return Type.BOOLEAN;
     }
-
 
 
     @Override
@@ -330,6 +319,8 @@ public class TypeCheckVisitor implements ASTVisitor {
         return constExpr.getType();
     }
 
+
+    /* ======================= MOKSH ======================= */
 
 
     @Override
