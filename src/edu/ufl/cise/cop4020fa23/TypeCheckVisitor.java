@@ -105,6 +105,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 
 
 
+
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException, TypeCheckException {
         System.out.println("Visiting Declaration: " + declaration.getNameDef().getName());
@@ -121,6 +122,12 @@ public class TypeCheckVisitor implements ASTVisitor {
         nameDef.visit(this, arg);
         Type declaredType = nameDef.getType();
 
+        // Handle dimensioned declarations
+        Dimension dimension = nameDef.getDimension();
+        if (dimension != null) {
+            // Visit the dimension
+            dimension.visit(this, arg);
+        }
 
         // If an initializer is present, check the types
         if (initializer != null) {
@@ -137,7 +144,6 @@ public class TypeCheckVisitor implements ASTVisitor {
 
         // Insert the NameDef into the symbol table
         symbolTable.insert(nameDef);
-
 
         return declaredType;
     }
@@ -551,17 +557,21 @@ public class TypeCheckVisitor implements ASTVisitor {
         LValue lValue = assignmentStatement.getlValue();
         Type lValueType;
 
+        // Enter a new scope for the assignment statement
+        symbolTable.enterScope();
+
         // Check if the LValue is in the context of a PixelSelector
         if (lValue.getPixelSelector() != null) {
-            symbolTable.enterScope();
             lValueType = (Type) lValue.visit(this, IN_LVALUE_CONTEXT);
-            symbolTable.leaveScope();
         } else {
             lValueType = (Type) lValue.visit(this, arg);
         }
 
         // Visit the expression on the right-hand side
         Type exprType = (Type) assignmentStatement.getE().visit(this, arg);
+
+        // Leave the scope of the assignment statement
+        symbolTable.leaveScope();
 
         // Check compatibility based on the provided table
         if (!(lValueType == exprType
